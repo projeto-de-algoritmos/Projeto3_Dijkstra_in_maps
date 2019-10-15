@@ -1,5 +1,10 @@
 
-import os, sys, json
+from routing.util import path_len
+from routing.bidirectional import BidirectionalAStarAnimator
+from routing.astar import AStarAnimator
+import os
+import sys
+import json
 from flask import Flask, make_response, request
 from flask_gzip import Gzip
 from time import time
@@ -9,9 +14,6 @@ gzip = Gzip(app, compress_level=9)
 if "test" in sys.argv:
     app.debug = True
 # sys.path.append("routing/")
-from routing.astar import AStarAnimator
-from routing.bidirectional import BidirectionalAStarAnimator
-from routing.util import path_len
 
 with open("routing/graph_data/brasilia.j") as fp:
     graph = json.loads(fp.read())
@@ -27,6 +29,7 @@ ANIMATOR = AStarAnimator(graph, graph_coords, lm_dists)
 @app.route("/favicon.ico")
 def get_favicon():
     return open("static/favicon.ico", "r").read()
+
 
 @app.route("/animation")
 def search_animation():
@@ -47,38 +50,34 @@ def search_animation():
     if search_type == "dijkstra":
         seq, coords, path = animator.dijkstra_animation(source, dest)
     elif search_type == "astar":
-        seq, coords, path = animator.astar_animation(source, dest, heuristic, epsilon)
+        seq, coords, path = animator.astar_animation(
+            source, dest, heuristic, epsilon)
     elif search_type == "alt":
         seq, coords, path = animator.alt_animation(source, dest, epsilon)
 
     data = {
-        "sequence" : seq,
-        "coords" : coords,
-        "path" : path,
+        "sequence": seq,
+        "coords": coords,
+        "path": path,
         "meta": {
-          "elapsed_ms": round((time() - start) * 1000),
-          "closed_set_len": len(coords),
-          "path_len_nodes": len(path),
-          "path_len_km": path_len(path)
+            "elapsed_ms": round((time() - start) * 1000),
+            "closed_set_len": len(coords),
+            "path_len_nodes": len(path),
+            "path_len_km": path_len(path)
         }
     }
     return make_response(json.dumps(data))
 
-@app.route("/animate")
-def animate():
-    return open("static/gmaps.html", "r").read()
-
-@app.route("/about")
-def about():
-    return open("static/about.html", "r").read()
 
 @app.route("/")
 def index():
-    return open("static/index.html", "r").read()
+    return open("static/gmaps.html", "r").read()
+
 
 def split_comma_ll(ll_string):
     s = ll_string.split(",")
     return float(s[0]), float(s[1])
+
 
 if __name__ == "__main__":
     app.run()
